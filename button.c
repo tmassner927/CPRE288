@@ -15,6 +15,9 @@
 // which is connected to the push buttons
 #include "button.h"
 
+// Global varibles
+volatile int button_event;
+volatile int button_num;
 
 /**
  * Initialize PORTE and configure bits 0-3 to be used as inputs for the buttons.
@@ -28,7 +31,7 @@ void button_init() {
 	}
 
 	// delete warning after implementing 
-	#warning "Unimplemented function: void button_init()"
+	//#warning "Unimplemented function: void button_init()"
 	
 	// Reading: To initialize and configure GPIO PORTE, visit pg. 656 in the 
 	// Tiva datasheet.
@@ -56,8 +59,62 @@ void button_init() {
 
 
 /**
- * Returns the position of the leftmost button being pushed.
- * @return the position of the leftmost button being pushed. 4 is the leftmost button, 1 is the rightmost button.  0 indicates no button being pressed
+ * Initialize and configure PORTE interupts
+ */
+void init_button_interrupts() {
+
+    #warning: "Unimplemented function: void init_button_interrupts() -- You must configure GPIO to detect interrupts" // delete warning after implementing
+    // In order to configure GPIO ports to detect interrupts, you will need to visit pg. 656 in the Tiva datasheet.
+    // Notice that you already followed some steps in 10.3 for initialization and configuration of the GPIO ports in the function button_init().
+    // Additional steps for setting up the GPIO port to detect interrupts have been outlined below.
+    // TODO: Complete code below
+
+    // 1) Mask the bits for pins 0-3
+    GPIO_PORTE_IM_R &= 0b11110000;
+
+    // 2) Set pins 0-3 to use edge sensing
+    GPIO_PORTE_IS_R &= 0b11110000;
+
+    // 3) Set pins 0-3 to use both edges. We want to update the LCD
+    //    when a button is pressed, and when the button is released.
+    GPIO_PORTE_IBE_R |= 0b00001111;
+
+    // 4) Clear the interrupts
+    GPIO_PORTE_ICR_R = 0b11111111;
+
+    // 5) Unmask the bits for pins 0-3
+    GPIO_PORTE_IM_R |= 0b00001111;
+
+    //#warning: "Unimplemented function: void init_button_interrupts() -- You must configure interrupts" // delete warning after implementing
+
+    // 6) Enable GPIO port E interrupt
+    NVIC_EN0_R |= 0x00000010;
+
+    // Bind the interrupt to the handler.
+    IntRegister(INT_GPIOE, gpioe_handler);
+}
+
+
+/**
+ * Interrupt handler -- executes when a GPIO PortE hardware event occurs (i.e., for this lab a button is pressed)
+ */
+void gpioe_handler() {
+
+#warning: "Unimplemented function: void gpioe_handler() -- You must configure interrupts" // delete warning after implementing
+
+    // update button_event = 1;
+    button_num = button_getButton();
+
+    // Clear interrupt status register
+    GPIO_PORTE_ICR_R = 0b11111111;
+}
+
+
+
+
+/**
+ * Returns the position of the rightmost button being pushed.
+ * @return the position of the rightmost button being pushed. 4 is the rightmost button, 1 is the leftmost button.  0 indicates no button being pressed
  */
 uint8_t button_getButton() {
 
@@ -94,28 +151,27 @@ uint8_t button_getButton() {
 	// ((GPIO_PORTE_DATA_R >> 2) & 1) => 0 if S3 is pushed
 	// ((GPIO_PORTE_DATA_R >> 2) & 1) => 1 if S3 is not pushed
 
-	// TODO: Write code below -- Return the left must button position pressed
 	
-	if((GPIO_PORTE_DATA_R | 0b11110111) == 0b11110111) {            //button 4
-	    return 4;
-	}
 	
-	else if((GPIO_PORTE_DATA_R | 0b11111011) == 0b11111011) {       //button 3
-	    return 3;
-	}
+        if((GPIO_PORTE_DATA_R | 0b11110111) == 0b11110111) {            //button 4
+            return 4;
+        }
 
-	else if((GPIO_PORTE_DATA_R | 0b11111101) == 0b11111101) {       //button 2
-	    return 2;
-	}
+        else if((GPIO_PORTE_DATA_R | 0b11111011) == 0b11111011) {       //button 3
+            return 3;
+        }
 
-	else if((GPIO_PORTE_DATA_R | 0b11111110) == 0b11111110) {       //button 1
-	    return 1;
-	}
+        else if((GPIO_PORTE_DATA_R | 0b11111101) == 0b11111101) {       //button 2
+            return 2;
+        }
 
-	else {
-	    return 0;
-	}
+        else if((GPIO_PORTE_DATA_R | 0b11111110) == 0b11111110) {       //button 1
+            return 1;
+        }
 
+        else {
+            return 0;
+        }
 }
 
 
